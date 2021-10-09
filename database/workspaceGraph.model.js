@@ -1,7 +1,10 @@
 const model = require('./arango-orm/model');
+const { graphDB: config } = require('config');
 
 class Workspace {
-  this.vertices = config.graphDB.collections['vertices'];
+  constructor() {
+    this.vertices = config.collections['vertices'];
+  }
 
   _documentObject(data) {
     return data._result.filter(item => item)
@@ -25,7 +28,7 @@ class Workspace {
         parentId = parentId || document[0]._key
         let edges = await model.createEdges(document[0]._id, parentId);
         edge = this._documentObject(edge);
-        await model.getNode([filters.idFilter(edge[0]._from)]);
+        return await model.getNode([filters.idFilter(edge[0]._from)]);
       } else {
         throw new Error('Failed to create document');
       }

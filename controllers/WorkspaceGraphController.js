@@ -1,6 +1,7 @@
-const WorkspaceModel = require('../database/workspace.model');
+const WorkspaceModel = require('../database/workspaceGraph.model');
 const filters = require('../database/arango-orm/filter');
 
+const Workspace = new WorkspaceModel();
 /**
  * Class Workspace Controller
  **/
@@ -16,7 +17,7 @@ class WorkspaceController {
         filterObj.push(filters.keyFilter(req.query.parentId))
         isParent = true
       }
-	    const data = await WorkspaceModel.find(filterObj, req.query.page, req.query.per_page, isParent);
+	    const data = await Workspace.find(filterObj, req.query.page, req.query.per_page, isParent);
       res.json(data);
     } catch (error) {
       res.json({
@@ -34,16 +35,14 @@ class WorkspaceController {
       if(req.body.type === 'file') {
         req.body['code'] = 'File content';
       }
-      await WorkspaceModel.create(req.body, parentId);
-      res.json({
-        success: true,
-        message: 'Workspace created.'
-      });
+      const data = await Workspace.create(req.body, parentId);
+      res.json(data);
     } catch (error) {
-      res.json({
-        success: false,
-        message: error.message || error
-      });
+      // res.json({
+      //   success: false,
+      //   message: error.message || error
+      // });
+      res.send(error);
     }
   }
 
@@ -51,11 +50,8 @@ class WorkspaceController {
     try {
       let id = req.params.id;
       req.body['_key'] = id;
-	    const data = await WorkspaceModel.update(req.body);
-      res.json({
-        success: true,
-        message: 'Workspace updated.'
-      });
+	    const data = await Workspace.update(req.body);
+      res.json(data);
     } catch (error) {
       res.json({
         success: false,
@@ -67,7 +63,7 @@ class WorkspaceController {
   async remove(req, res) {
     try {
 	    let id = req.params.id;
-      await WorkspaceModel.destroy(id);
+      await Workspace.destroy(id);
       res.send('Worksapce deleted.');
     } catch (error) {
       res.json({
@@ -78,4 +74,4 @@ class WorkspaceController {
   }
 }
 
-module.exports = WorksapceController;
+module.exports = WorkspaceController;

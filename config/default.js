@@ -9,5 +9,8 @@ module.exports = {
       vertices: process.env.VERTICES,
       edges: process.env.EDGES
     }
+  },
+  efs: {
+    homePath: process.env.EFS_PATH
   }
 }

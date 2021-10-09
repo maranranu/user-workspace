@@ -1,15 +1,16 @@
 const {objectToString} = require('./helpers');
 const crypto = require('crypto');
 const filters = require('./filter')
+const { graphDB: config } = require('config');
 
 const Database = require('arangojs').Database
 
-const db = new Database(config.graphDB.url)
-db.useDatabase(config.graphDB.database)
-db.useBasicAuth(config.graphDB.user, config.graphDB.password)
+const db = new Database(config.url)
+db.useDatabase(config.database)
+db.useBasicAuth(config.user, config.password)
 
-let vertices = config.graphDB.collections['vertices']
-let edges = config.graphDB.collections['edges']
+let vertices = config.collections['vertices']
+let edges = config.collections['edges']
 
 function getNeighbourChild (filterObj, pageno, limit) {
   let offset = (pageno - 1) * limit
@@ -106,7 +107,7 @@ function getNode (filterObj) {
 
 
 module.exports = {
-  getNeighbourChild: queryNeighboursChild,
+  getNeighbourChild: getNeighbourChild,
   createVertices: createVertices,
   createEdges: createEdges,
   update: updateDocument,
@@ -114,6 +115,5 @@ module.exports = {
   deleteEdges: deleteEdges,
   getRootNodes: getRootNodes,
   getAllRootNodes: getAllRootNodes,
-  getNode: getNode,
-  getEdges: getEdges,
+  getNode: getNode
 }
