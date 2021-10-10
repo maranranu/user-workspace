@@ -1,8 +1,8 @@
 # Workspace
 REST API service with workspace creation using graphDB and EFS
 
-
 # How to run application
+Create .env file, copy from .env.example and update required configuration value
 npm start
 
 ## Hit APIs
