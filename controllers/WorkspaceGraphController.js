@@ -38,11 +38,10 @@ class WorkspaceController {
       const data = await Workspace.create(req.body, parentId);
       res.json(data);
     } catch (error) {
-      // res.json({
-      //   success: false,
-      //   message: error.message || error
-      // });
-      res.send(error);
+      res.json({
+        success: false,
+        message: error.message || error
+      });
     }
   }
 

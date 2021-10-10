@@ -6,10 +6,16 @@ const { efs: config } = require('config');
 class Workspace {
   _absolutePath (userId, pwdPath) {
     userId = userId.toString();
-    const nfsPath = path.resolve(config.homePath, userId);
-    return path.resolve(nfsPath, pwdPath);
+    return pwdPath ? `${config.homePath}/${userId}/${pwdPath}` : `${config.homePath}/${userId}`;
   }
-
+  _basename (folderPath) {
+    if (folderPath) {
+      let filename = folderPath.split('/');
+      return filename[filename.length - 1];
+    } else {
+      return folderPath;
+    }
+  }
   async _nameUniqueness (data, file, type) {
     try {
       const files = await this.findAll(data);
@@ -24,7 +30,7 @@ class Workspace {
       return Promise.resolve();
     }
   } catch (error) {
-    if (error.status === 404 || error.statusCode === 404) {
+    if (error.status === 404 || error.statusCode === 404 || error.code === 'ENOENT') {
       return Promise.resolve();
     } else {
       throw error;
@@ -36,12 +42,11 @@ class Workspace {
     try {
       let absolutePath = this._absolutePath(filters.userId, filters.pwdPath);
       let pwdPath = filters.pwdPath;
-
       let files = await fs.readdir(absolutePath);
       let result = [];
       await Promise.map(files, async(file) => {
-        let fileName = basename(file);
-        const stats = await fse.stat(path.resolve(absolutePath, file));
+        let fileName = this._basename(file);
+        const stats = await fs.stat(path.resolve(absolutePath, file));
         let pwdFilePath = pwdPath ? `${pwdPath}/${fileName}` : fileName;
         result.push({
           name: fileName,
@@ -58,13 +63,14 @@ class Workspace {
 
   async create (data) {
     let absolutePath = this._absolutePath(data.userId, data.pwdPath);
-    absolutePath = path.resolve(absolutePath, data.name);
-    await this._nameUniqueness(data, data.name, data.type);
+    await fs.ensureDir(absolutePath, { recursive: true })
+    absolutePath = `${absolutePath}/${data.name}`
 
+    await this._nameUniqueness(data, data.name, data.type);
     if (data.type === 'folder') {
-      return fs.ensureDir(absolutePath)
+      return fs.ensureDir(absolutePath, { recursive: true })
     } else {
-      return fs.writeFile(absolutePath, content);
+      return fs.writeFile(absolutePath, data.content);
     }
   }
 
@@ -76,9 +82,9 @@ class Workspace {
       let pwdPath = newPwdPath.length ? newPwdPath.join('/') : '';
       await this._nameUniqueness({userId: data.userId, pwdPath: pwdPath}, data.name, data.type);
       newPwdPath = newPwdPath.length ? `${newPwdPath.join('/')}/${data.name}` : data.name;
-      return fs.rename(this._absolutePath(data.userId, newPwdPath));
+      await fs.rename(absolutePath, this._absolutePath(data.userId, newPwdPath));
     } else if (operation === 'code_update') {
-      return fs.writeFile(absolutePath, data.content);
+      await fs.writeFile(absolutePath, data.content);
     } else {
       return Promise.reject(new Error('Unknown operation type for update'))
     }
@@ -86,6 +92,7 @@ class Workspace {
 
   destroy (data) {
     let absolutePath = this._absolutePath(data.userId, data.pwdPath);
+    console.log(absolutePath);
     return fs.remove(absolutePath);
   }
 }

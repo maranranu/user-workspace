@@ -12,11 +12,11 @@ db.useBasicAuth(config.user, config.password)
 let vertices = config.collections['vertices']
 let edges = config.collections['edges']
 
-function getNeighbourChild (filterObj, pageno, limit) {
+async function getNeighbourChild (filterObj, pageno, limit) {
   let offset = (pageno - 1) * limit
   let filterStr = objectToString('algo', filterObj)
 
-  return db.query({
+  const cursor = await db.query({
     query: `FOR algo IN ${vertices} \
       ${filterStr['filter']} \
       FOR vertex,edge IN INBOUND algo ${edges} \
@@ -26,48 +26,54 @@ function getNeighbourChild (filterObj, pageno, limit) {
       RETURN vertex`,
     bindVars: filterStr['bind']
   })
+  return cursor.all()
 }
 
-function createVertices (data, parentId) {
+async function createVertices (data, parentId) {
   let hash = crypto.randomBytes(16).toString('hex')
   data['algorithmHash'] = hash
   data = JSON.stringify(data)
-  return db.query(`INSERT ${data} INTO ${vertices} RETURN NEW`)
+  const cursor = await db.query(`INSERT ${data} INTO ${vertices} RETURN NEW`);
+  return cursor.next()
 }
 
-function createEdges (child, parent) {
-  return db.query({
+async function createEdges (child, parent) {
+  const cursor = await db.query({
     query: `INSERT { _from: '${child}', _to: '${vertices}/${parent}' } INTO ${edges} RETURN NEW`,
     bindVars: {}
   })
+  return cursor.next()
 }
 
-function updateDocument (data) {
-  return db.query({
+async function updateDocument (data) {
+  const cursor = await db.query({
     query: `UPDATE '${data._key}' WITH ${JSON.stringify(data)} IN ${vertices} RETURN NEW`,
     bindVars: {}
-  })
+  });
+  return cursor.next();
 }
 
-function deleteVertices (keys) {
-  return db.query({
+async function deleteVertices (keys) {
+  const cursor = await db.query({
     query: `FOR algo in ${vertices} FILTER algo._id IN @keys \
             REMOVE algo IN ${vertices}`,
     bindVars: {keys: keys}
   })
+  return cursor.next();
 }
 
-function deleteEdges (keys) {
-  return db.query({
+async function deleteEdges (keys) {
+  const cursor = await db.query({
     query: `FOR edge in ${edges} FILTER edge._to IN @keys || edge._from IN @keys REMOVE edge IN ${edges}`,
     bindVars: {keys: keys}
-  })
+  });
+  return cursor.next();
 }
 
-function getRootNodes (filterObj, pageno, limit) {
+async function getRootNodes (filterObj, pageno, limit) {
   let offset = (pageno - 1) * limit
   let filterStr = objectToString('algo', filterObj)
-  return db.query({
+  const cursor = await db.query({
     query: `FOR algo IN ${vertices} \
     ${filterStr['filter']} \
     FOR v,e IN OUTBOUND algo ${edges} \
@@ -77,13 +83,14 @@ function getRootNodes (filterObj, pageno, limit) {
     LIMIT ${offset},${limit} \
     RETURN data`,
     bindVars: filterStr['bind']
-  })
+  });
+  return cursor.all();
 }
 
-function getAllRootNodes (filterObj) {
+async function getAllRootNodes (filterObj) {
   let filterStr = objectToString('algo', filterObj)
   filterStr['bind'] = Object.assign({}, filterStr['bind'], { 'n': config.graphDB.maxDepth })
-  return db.query({
+  const cursor = await db.query({
     query: `FOR algo IN ${vertices} \
     ${filterStr['filter']} \
     FOR  v IN 0..@n INBOUND algo ${edges}
@@ -91,18 +98,20 @@ function getAllRootNodes (filterObj) {
     SORT data.updatedAt DESC \
     RETURN data`,
     bindVars: filterStr['bind']
-  })
+  });
+  return cursor.all();
 }
 
-function getNode (filterObj) {
+async function getNode (filterObj) {
   let filterStr = objectToString('algo', filterObj)
 
-  return db.query({
+  const cursor = await db.query({
     query: `FOR algo IN ${vertices} \
               ${filterStr['filter']} \
               RETURN algo`,
     bindVars: filterStr['bind']
-  })
+  });
+  return cursor.all();
 }
 
 

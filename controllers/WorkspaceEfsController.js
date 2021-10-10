@@ -51,7 +51,7 @@ class WorkspaceEFSController {
 
   async remove(req, res) {
     try {
-      await this.model.destroy(req.params);
+      await this.model.destroy(req.query);
 	    res.send('Worksapce deleted.');
     } catch (error) {
       res.json({

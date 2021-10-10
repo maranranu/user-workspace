@@ -2,7 +2,7 @@ module.exports = {
   userFilter: function (value) {
     return {
       name: 'userId',
-      value: value,
+      value: parseInt(value),
       op: '=='
     }
   },

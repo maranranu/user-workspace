@@ -1,13 +1,10 @@
 const model = require('./arango-orm/model');
 const { graphDB: config } = require('config');
+const filters = require('./arango-orm/filter');
 
 class Workspace {
   constructor() {
     this.vertices = config.collections['vertices'];
-  }
-
-  _documentObject(data) {
-    return data._result.filter(item => item)
   }
 
   findOne (filters) {
@@ -23,12 +20,10 @@ class Workspace {
   async create (data, parentId) {
     try {
       let document = await model.createVertices(data, parentId);
-      document = this._documentObject(document);
-      if (document && document.length) {
-        parentId = parentId || document[0]._key
-        let edges = await model.createEdges(document[0]._id, parentId);
-        edge = this._documentObject(edge);
-        return await model.getNode([filters.idFilter(edge[0]._from)]);
+      if (document) {
+        parentId = parentId || document._key
+        let edge = await model.createEdges(document._id, parentId);
+        return await model.getNode([filters.idFilter(edge._from)]);
       } else {
         throw new Error('Failed to create document');
       }
@@ -38,14 +33,13 @@ class Workspace {
     }
   }
 
-  updateDocument (data) {
+  update (data) {
     return model.update(data)
   }
 
   async destroy (id) {
     try {
       let vertices = await this.findOne([filters.keyFilter(id)]);
-      vertices = this._documentObject(vertices);
       let verticesIds = vertices.map(ver => { return ver._id });
       verticesIds.push(`${this.vertices}/${id}`);
       await model.deleteVertices(verticesIds);
